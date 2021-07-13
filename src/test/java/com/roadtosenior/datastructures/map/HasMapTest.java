@@ -1,9 +1,14 @@
 package com.roadtosenior.datastructures.map;
 
+import com.roadtosenior.datastructures.list.ArrayList;
+import com.roadtosenior.datastructures.list.List;
 import com.roadtosenior.datastructures.map.HashMap.Entry;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Iterator;
 
 import static org.junit.Assert.*;
@@ -16,9 +21,9 @@ public class HasMapTest {
     @Before
     public void before() {
         hashMap = new HashMap<>();
-        hashMap.put("A", "one");
+        hashMap.put("M", "one");
         hashMap.put("B", "two");
-        hashMap.put("C", "three");
+        hashMap.put("N", "three");
         hashMap.put("D", "four");
         hashMap.put("E", "five");
     }
@@ -41,6 +46,24 @@ public class HasMapTest {
     }
 
     @Test
+    public void testPutArrayLists() {
+        HashMap<List<Integer>, Integer> hashMap = new HashMap<>();
+        for (int i = 0; i < 9; i++) {
+            List<Integer> key = new ArrayList<>();
+            key.add(i);
+            hashMap.put(key, i);
+        }
+        assertEquals(9, hashMap.size());
+    }
+
+    @Test
+    public void testPutNull() {
+        HashMap<Object, String> hashMap = new HashMap<>();
+        hashMap.put(null, "null");
+        assertEquals("null", hashMap.get(null));
+    }
+
+    @Test
     public void testContainsKeyOnEmptyMap() {
         assertFalse(emptyHashMap.containsKey("A"));
     }
@@ -58,10 +81,10 @@ public class HasMapTest {
 
     @Test
     public void testRemove() {
-        assertEquals("one", hashMap.remove("A"));
+        assertEquals("one", hashMap.remove("M"));
         assertEquals(4, hashMap.size());
         assertEquals("two", hashMap.remove("B"));
-        assertEquals("three", hashMap.remove("C"));
+        assertEquals("three", hashMap.remove("N"));
 
         assertFalse(hashMap.isEmpty());
         assertFalse(hashMap.containsKey("C"));
@@ -74,7 +97,7 @@ public class HasMapTest {
     @Test
     public void testIterator() {
         for (Entry<String, String> entry : hashMap) {
-            emptyHashMap.put(entry.key, entry.value);
+            emptyHashMap.put(entry.getKey(), entry.getValue());
         }
 
         assertEquals(5, emptyHashMap.size());
@@ -85,5 +108,27 @@ public class HasMapTest {
         it.remove();
         assertFalse(hashMap.containsKey(key));
         assertEquals(4, hashMap.size());
+    }
+
+    @Test
+    public void testKeyHashCode () throws IllegalAccessException, NoSuchMethodException, InvocationTargetException, NoSuchFieldException {
+        Class clazz = hashMap.getClass();
+
+        Field field = clazz.getDeclaredField("buckets");
+        field.setAccessible(true);
+
+        Method methodGetBucketIndex = clazz.getDeclaredMethod("getBucketIndex", Object.class);
+        methodGetBucketIndex.setAccessible(true);
+
+        List[] buckets = (List[]) field.get(hashMap);
+        for (int i = 0; i < buckets.length; i++) {
+            if (buckets[i] != null) {
+                for (Object e : buckets[i]) {
+                    Field keyField = e.getClass().getDeclaredField("key");
+                    keyField.setAccessible(true);
+                    assertEquals(i, methodGetBucketIndex.invoke(hashMap, methodGetBucketIndex.invoke(hashMap, keyField.get(e))));
+                }
+            }
+        }
     }
 }
