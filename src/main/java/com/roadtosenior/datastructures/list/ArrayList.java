@@ -6,14 +6,14 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, Iterable<E
 
     private static final int INITIAL_CAPACITY = 5;
 
-    Object[] array;
+    E[] array;
 
     public ArrayList() {
         this(INITIAL_CAPACITY);
     }
 
     public ArrayList(int initialCapacity) {
-        array = new Object[initialCapacity];
+        array = (E[]) new Object[initialCapacity];
     }
 
     @Override
@@ -43,9 +43,9 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, Iterable<E
     @Override
     public E set(E value, int index) {
         validateIndex(index);
-        Object originalObject = get(index);
+        E originalObject = get(index);
         array[index] = value;
-        return (E) originalObject;
+        return originalObject;
     }
 
     @Override
@@ -95,7 +95,7 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, Iterable<E
 
     private void ensureCapacity() {
         if (size == array.length) {
-            Object[] tempArray = new Object[(int) (array.length * 1.5) + 1];
+            E[] tempArray = (E[]) new Object[(int) (array.length * 1.5) + 1];
             System.arraycopy(array, 0, tempArray, 0, size);
             array = tempArray;
         }

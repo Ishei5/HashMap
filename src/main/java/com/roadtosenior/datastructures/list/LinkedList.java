@@ -90,8 +90,8 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
     }
 
     @Override
-    public Object set(Object value, int index) {
-        Object returnedValue = getNode(index).value;
+    public E set(E value, int index) {
+        E returnedValue = get(index);
         getNode(index).value = value;
         return returnedValue;
     }

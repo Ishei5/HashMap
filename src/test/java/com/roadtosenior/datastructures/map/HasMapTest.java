@@ -12,6 +12,8 @@ import java.lang.reflect.Method;
 import java.util.Iterator;
 
 import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class HasMapTest {
 
@@ -107,7 +109,7 @@ public class HasMapTest {
         String key = it.next().getValue();
         it.remove();
         assertFalse(hashMap.containsKey(key));
-        assertEquals(4, hashMap.size());
+        assertThat(hashMap.size(), is(4));
     }
 
     @Test
