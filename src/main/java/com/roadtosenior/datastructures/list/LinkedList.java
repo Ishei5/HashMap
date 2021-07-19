@@ -4,10 +4,10 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.StringJoiner;
 
-public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<E> {
+public class LinkedList<E> extends AbstractList<E> {
 
-    private Node head;
-    private Node tail;
+    private Node<E> head;
+    private Node<E> tail;
 
     @Override
     public Iterator<E> iterator() {
@@ -19,22 +19,9 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
         private Node<E> prev;
         private E value;
 
-        public Node(E value) {
+        private Node(E value) {
             this.value = value;
         }
-    }
-
-    @Override
-    public void add(E value) {
-        Node<E> newNode = new Node<>(value);
-        if (size == 0) {
-            head = tail = newNode;
-        }
-
-        tail.next = newNode;
-        newNode.prev = tail;
-        tail = newNode;
-        size++;
     }
 
     @Override
@@ -52,7 +39,7 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
             node.prev = tail;
             tail = node;
         } else {
-            Node nextNode = getNode(index);
+            Node<E> nextNode = getNode(index);
             node.prev = nextNode.prev;
             nextNode.prev.next = node;
 
@@ -71,11 +58,16 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
         return node.value;
     }
 
-    private void removeNode(Node node) {
+    private void removeNode(Node<E> node) {
+        if (size == 1) {
+            head = tail = null;
+        }
         if (node.prev == null) {
             head = node.next;
+            head.prev = null;
         } else if (node.next == null) {
             tail = node.prev;
+            tail.next = null;
         } else {
             node.prev.next = node.next;
             node.next.prev = node.prev;
@@ -86,7 +78,7 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
     @Override
     public E get(int index) {
         validateIndex(index);
-        return (E) getNode(index).value;
+        return getNode(index).value;
     }
 
     @Override
@@ -104,18 +96,25 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
 
     @Override
     public int indexOf(Object value) {
+        Node<E> current = head;
+        int index = 0;
+
         if (value == null) {
-            for (int i = 0; i < size; i++) {
-                if (getNode(i).value == null) {
-                    return i;
+            while (current != null) {
+                if (current.value == null) {
+                    return index;
                 }
+                current = current.next;
+                index++;
             }
         }
         if (value != null) {
-            for (int i = 0; i < size; i++) {
-                if (getNode(i).value.equals(value)) {
-                    return i;
+            while (current != null) {
+                if (value.equals(current.value)) {
+                    return index;
                 }
+                current = current.next;
+                index++;
             }
         }
         return -1;
@@ -123,18 +122,25 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
 
     @Override
     public int lastIndexOf(Object value) {
+        Node<E> current = tail;
+        int index = size - 1;
+
         if (value == null) {
-            for (int i = size - 1; i >= 0; i--) {
-                if (getNode(i).value == null) {
-                    return i;
+            while (current != null) {
+                if (current.value == null) {
+                    return index;
                 }
+                current = current.prev;
+                index--;
             }
         }
         if (value != null) {
-            for (int i = size - 1; i >= 0; i--) {
-                if (getNode(i).value.equals(value)) {
-                    return i;
+            while (current != null) {
+                if (value.equals(current.value)) {
+                    return index;
                 }
+                current = current.prev;
+                index--;
             }
         }
         return -1;
@@ -142,45 +148,33 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
 
     @Override
     public String toString() {
-        if (isEmpty()) {
-            return "[]";
-        }
-
         StringJoiner result = new StringJoiner(", ", "[", "]");
-        Node node = head;
 
-        while (node != null) {
-            result.add(String.valueOf(node.value));
-            node = node.next;
+        for (E e : this) {
+            result.add(String.valueOf(e));
         }
-
         return result.toString();
     }
 
-    private int defineNearestSide(int index) {
-        return size / 2 >= index ? 0 : size - 1;
-    }
-
-    private Node getNode(int index) {
-        int start = defineNearestSide(index);
-        Node<E> currentNode = null;
-        if (start == 0) {
+    private Node<E> getNode(int index) {
+        Node<E> currentNode;
+        if (index < size / 2) {
             currentNode = head;
             for (int i = 0; i < index; i++) {
                 currentNode = currentNode.next;
             }
         } else {
             currentNode = tail;
-            for (int i = start; i > index; i--) {
+            for (int i = size - 1; i > index; i--) {
                 currentNode = currentNode.prev;
             }
         }
         return currentNode;
     }
 
-    private class LinkedListIterator implements Iterator {
-        private Node currentNode = head;
-        private Node prevNode = null;
+    private class LinkedListIterator implements Iterator<E> {
+        private Node<E> currentNode = head;
+        private Node<E> prevNode = null;
         private boolean isRemovable = false;
 
         @Override
@@ -189,12 +183,12 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
         }
 
         @Override
-        public Object next() {
+        public E next() {
             if (currentNode.next == head) {
                 throw new NoSuchElementException();
             }
-            Object value = null;
-            while (hasNext()) {
+            E value = null;
+            if (hasNext()) {
                 value = currentNode.value;
                 prevNode = currentNode;
                 currentNode = currentNode.next;
@@ -206,9 +200,11 @@ public class LinkedList<E> extends AbstractList<E> implements List<E>, Iterable<
 
         @Override
         public void remove() {
-            if(isRemovable) {
-                removeNode(prevNode);
+            if (isRemovable) {
+                removeNode(currentNode.prev);
                 isRemovable = false;
+            } else {
+                throw new IllegalStateException();
             }
         }
     }

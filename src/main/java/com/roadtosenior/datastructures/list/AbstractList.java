@@ -10,21 +10,6 @@ public abstract class AbstractList<E> implements List<E> {
     }
 
     @Override
-    abstract public void add(E value, int index);
-
-    @Override
-    abstract public E remove(int index);
-
-    @Override
-    abstract public E get(int index);
-
-    @Override
-    abstract public E set(E value, int index);
-
-    @Override
-    abstract public void clear();
-
-    @Override
     public int size() {
         return size;
     }
@@ -36,14 +21,8 @@ public abstract class AbstractList<E> implements List<E> {
 
     @Override
     public boolean contains(E value) {
-        return indexOf(value) != -1 ? true : false;
+        return indexOf(value) != -1;
     }
-
-    @Override
-    abstract public int indexOf(E value);
-
-    @Override
-    abstract public int lastIndexOf(E value);
 
     void validateIndex(int index) {
         if (index < 0 || index >= size) {

@@ -5,6 +5,7 @@ import com.roadtosenior.datastructures.list.List;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 public class HashMap<K, V> implements Map<K, V> {
 
@@ -24,21 +25,21 @@ public class HashMap<K, V> implements Map<K, V> {
     }
 
     @Override
-    public Object put(K key, V value) {
+    public V put(K key, V value) {
         V oldValue = null;
         List<Entry<K, V>> currentBucket = getBucket(key);
         if (currentBucket == null) {
             currentBucket = new ArrayList<>();
-            addEntryToBucket(currentBucket, new Entry<>(key, value));
             buckets[getBucketIndex(key)] = currentBucket;
+        }
+        Entry<K, V> currentEntry = getEntry(key);
+        if (currentEntry == null) {
+            currentBucket.add(new Entry<>(key, value));
+            size++;
+            mapSpreading();
         } else {
-            Entry<K, V> currentEntry = getEntryFromBucketByKey(key, currentBucket);
-            if (currentEntry == null) {
-                addEntryToBucket(currentBucket, new Entry<>(key, value));
-            } else {
-                oldValue = currentEntry.value;
-                currentEntry.setValue(value);
-            }
+            oldValue = currentEntry.getValue();
+            currentEntry.setValue(value);
         }
         return oldValue;
     }
@@ -47,7 +48,7 @@ public class HashMap<K, V> implements Map<K, V> {
     public V get(K key) {
         List<Entry<K, V>> currentBucket = getBucket(key);
 
-        return currentBucket == null ? null : (V) getEntryFromBucketByKey(key, currentBucket).getValue();
+        return currentBucket == null ? null : Objects.requireNonNull(getEntry(key)).getValue();
     }
 
     @Override
@@ -59,7 +60,7 @@ public class HashMap<K, V> implements Map<K, V> {
     public V remove(K key) {
         List<Entry<K, V>> bucket = getBucket(key);
         if (bucket != null) {
-            Entry<K, V> removedEntry = getEntryFromBucketByKey(key, bucket);
+            Entry<K, V> removedEntry = getEntry(key);
             if (removedEntry != null) {
                 size--;
                 return bucket.remove(bucket.indexOf(removedEntry)).getValue();
@@ -80,13 +81,7 @@ public class HashMap<K, V> implements Map<K, V> {
         if (currentBucket == null) {
             return false;
         }
-        return getEntryFromBucketByKey(key, getBucket(key)) != null;
-    }
-
-    private void addEntryToBucket(List<Entry<K, V>> bucket, Entry<K, V> entry) {
-        bucket.add(entry);
-        size++;
-        mapSpreading();
+        return getEntry(key) != null;
     }
 
     private List<Entry<K, V>> getBucket(K key) {
@@ -94,14 +89,17 @@ public class HashMap<K, V> implements Map<K, V> {
     }
 
     private int getBucketIndex(K key) {
-        return key != null ? key.hashCode() % buckets.length : 0;
+        if (key == null) {
+            return 0;
+        }
+
+        return Math.abs(key.hashCode()) % buckets.length;
     }
 
-    private Entry getEntryFromBucketByKey(K key, List<Entry<K, V>> bucket) {
+    private Entry<K, V> getEntry(K key) {
+        List<Entry<K, V>> bucket = buckets[getBucketIndex(key)];
         for (Entry<K, V> entry : bucket) {
-            if (key == null) {
-                return entry;
-            } else if(key.equals(entry.key)) {
+            if (Objects.equals(key, entry.getKey())) {
                 return entry;
             }
         }
@@ -110,47 +108,25 @@ public class HashMap<K, V> implements Map<K, V> {
 
     private void mapSpreading() {
         if (size > buckets.length * LOAD_FACTOR) {
-            HashMap<K, V> newMap = new HashMap(buckets.length * INCREASE_FACTOR);
+            List<Entry<K, V>>[] newBuckets = new ArrayList[buckets.length * INCREASE_FACTOR];
             for (Entry<K, V> entry : HashMap.this) {
-                newMap.put(entry.getKey(), entry.getValue());
+                K key = entry.getKey();
+                V value = entry.getValue();
+                int bucketIndex = key == null ? 0 : Math.abs(key.hashCode()) % newBuckets.length;
+                List<Entry<K, V>> currentBucket = newBuckets[bucketIndex];
+                if (currentBucket == null) {
+                    currentBucket = new ArrayList<>();
+                    newBuckets[bucketIndex] = currentBucket;
+                }
+                currentBucket.add(new Entry<>(key, value));
             }
-            this.buckets = newMap.buckets;
+            buckets = newBuckets;
         }
     }
 
     @Override
     public Iterator<Entry<K, V>> iterator() {
         return new HashMapIterator();
-    }
-
-    static class Entry<K, V> {
-        private K key;
-        private V value;
-
-        public Entry(K key, V value) {
-            this.key = key;
-            this.value = value;
-        }
-
-        public K getKey() {
-            return key;
-        }
-
-        public V getValue() {
-            return value;
-        }
-
-        public void setValue(V value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return "Entry{" +
-                    "key=" + key +
-                    ", value=" + value +
-                    '}';
-        }
     }
 
     private class HashMapIterator implements Iterator<Entry<K, V>> {
@@ -176,7 +152,7 @@ public class HashMap<K, V> implements Map<K, V> {
                     if (bucketIterator == null) {
                         bucketIterator = currentBucket.iterator();
                     }
-                    while (bucketIterator.hasNext()) {
+                    if (bucketIterator.hasNext()) {
                         isRemovable = true;
                         currentEntry = bucketIterator.next();
                         if (!bucketIterator.hasNext() && (getNextBucketIndex(bucketIndex + 1) == -1)) {
@@ -203,8 +179,10 @@ public class HashMap<K, V> implements Map<K, V> {
         @Override
         public void remove() {
             if (isRemovable) {
-                HashMap.this.remove(currentEntry.key);
+                HashMap.this.remove(currentEntry.getKey());
                 isRemovable = false;
+            } else {
+                throw new IllegalStateException();
             }
         }
     }

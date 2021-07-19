@@ -97,6 +97,11 @@ public abstract class AbstractListTest {
     }
 
     @Test
+    public void testLastIndexOfWithNull() {
+        listWithTenElements.add(null, 1);
+    }
+
+    @Test
     public void testSet() {
         Object changedValue = listWithFiveElements.set(7, 1);
         assertEquals(1, changedValue);

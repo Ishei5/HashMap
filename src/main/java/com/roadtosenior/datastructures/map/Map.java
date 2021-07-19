@@ -1,9 +1,10 @@
 package com.roadtosenior.datastructures.map;
 
-public interface Map<K, V> extends Iterable<HashMap.Entry<K, V>> {
-    Object put(K key, V value);
+public interface Map<K, V> extends Iterable<Entry<K, V>> {
 
-    Object get(K key);
+    V put(K key, V value);
+
+    V get(K key);
 
     int size();
 

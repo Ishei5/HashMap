@@ -2,11 +2,11 @@ package com.roadtosenior.datastructures.list;
 
 import java.util.Iterator;
 
-public class ArrayList<E> extends AbstractList<E> implements List<E>, Iterable<E> {
+public class ArrayList<E> extends AbstractList<E>  {
 
     private static final int INITIAL_CAPACITY = 5;
 
-    E[] array;
+    private E[] array;
 
     public ArrayList() {
         this(INITIAL_CAPACITY);
@@ -30,6 +30,7 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, Iterable<E
         validateIndex(index);
         E removedObject = get(index);
         System.arraycopy(array, index + 1, array, index, size - index - 1);
+        array[size - 1] = null;
         size--;
         return removedObject;
     }
@@ -37,7 +38,7 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, Iterable<E
     @Override
     public E get(int index) {
         validateIndex(index);
-        return (E) array[index];
+        return array[index];
     }
 
     @Override
@@ -52,7 +53,6 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, Iterable<E
     public void clear() {
         for (int i = 0; i < size; i++) {
             array[i] = null;
-            i++;
         }
         size = 0;
     }
@@ -102,14 +102,14 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, Iterable<E
     }
 
     @Override
-    public Iterator iterator() {
+    public Iterator<E> iterator() {
         return new ArrayListIterator();
     }
 
     private class ArrayListIterator implements Iterator<E> {
 
-        int currentIndex = 0;
-        boolean isRemovable = false;
+        private int currentIndex = 0;
+        private boolean isRemovable = false;
 
         @Override
         public boolean hasNext() {
@@ -131,7 +131,9 @@ public class ArrayList<E> extends AbstractList<E> implements List<E>, Iterable<E
                 ArrayList.this.remove(prevIndex);
                 currentIndex = prevIndex;
                 isRemovable = false;
-            } else throw new IllegalStateException();
+            } else {
+                throw new IllegalStateException();
+            }
         }
     }
 }

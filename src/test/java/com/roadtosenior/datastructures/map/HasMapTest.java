@@ -2,7 +2,7 @@ package com.roadtosenior.datastructures.map;
 
 import com.roadtosenior.datastructures.list.ArrayList;
 import com.roadtosenior.datastructures.list.List;
-import com.roadtosenior.datastructures.map.HashMap.Entry;
+import com.roadtosenior.datastructures.map.Entry;
 import org.junit.Before;
 import org.junit.Test;
 
