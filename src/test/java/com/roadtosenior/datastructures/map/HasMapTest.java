@@ -2,12 +2,10 @@ package com.roadtosenior.datastructures.map;
 
 import com.roadtosenior.datastructures.list.ArrayList;
 import com.roadtosenior.datastructures.list.List;
-import com.roadtosenior.datastructures.map.Entry;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
@@ -113,7 +111,7 @@ public class HasMapTest {
     }
 
     @Test
-    public void testKeyHashCode () throws IllegalAccessException, NoSuchMethodException, InvocationTargetException, NoSuchFieldException {
+    public void testKeyHashCode () throws Exception{
         Class clazz = hashMap.getClass();
 
         Field field = clazz.getDeclaredField("buckets");

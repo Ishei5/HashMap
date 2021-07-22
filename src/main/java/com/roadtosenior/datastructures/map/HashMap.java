@@ -131,9 +131,9 @@ public class HashMap<K, V> implements Map<K, V> {
 
     private class HashMapIterator implements Iterator<Entry<K, V>> {
 
-        private int bucketIndex;
+        private int bucketIndex = getNextBucketIndex(0);
         private Iterator<Entry<K, V>> bucketIterator;
-        private Entry<K, V> currentEntry;
+        private Entry<K, V> entry;
         private boolean isRemovable;
 
         @Override
@@ -146,23 +146,19 @@ public class HashMap<K, V> implements Map<K, V> {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
-            while (bucketIndex < buckets.length) {
-                List<Entry<K, V>> currentBucket = buckets[bucketIndex];
-                if (currentBucket != null) {
-                    if (bucketIterator == null) {
-                        bucketIterator = currentBucket.iterator();
-                    }
-                    if (bucketIterator.hasNext()) {
-                        isRemovable = true;
-                        currentEntry = bucketIterator.next();
-                        if (!bucketIterator.hasNext() && (getNextBucketIndex(bucketIndex + 1) == -1)) {
-                            bucketIndex = -1;
-                        }
-                        return currentEntry;
-                    }
+
+            if (bucketIterator == null) {
+                bucketIterator = buckets[bucketIndex].iterator();
+            }
+
+            if (bucketIterator.hasNext()) {
+                entry = bucketIterator.next();
+                isRemovable = true;
+                if (!bucketIterator.hasNext()) {
+                    bucketIterator = null;
+                    bucketIndex = getNextBucketIndex(++bucketIndex);
                 }
-                bucketIterator = null;
-                bucketIndex = getNextBucketIndex(++bucketIndex);
+                return entry;
             }
             return null;
         }
@@ -179,7 +175,7 @@ public class HashMap<K, V> implements Map<K, V> {
         @Override
         public void remove() {
             if (isRemovable) {
-                HashMap.this.remove(currentEntry.getKey());
+                HashMap.this.remove(entry.getKey());
                 isRemovable = false;
             } else {
                 throw new IllegalStateException();
