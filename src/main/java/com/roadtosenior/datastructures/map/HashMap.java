@@ -1,11 +1,6 @@
 package com.roadtosenior.datastructures.map;
 
-import com.roadtosenior.datastructures.list.ArrayList;
-import com.roadtosenior.datastructures.list.List;
-
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
 
 public class HashMap<K, V> implements Map<K, V> {
 
@@ -26,12 +21,13 @@ public class HashMap<K, V> implements Map<K, V> {
 
     @Override
     public V put(K key, V value) {
-        V oldValue = null;
         List<Entry<K, V>> currentBucket = getBucket(key);
         if (currentBucket == null) {
-            currentBucket = new ArrayList<>();
+            currentBucket = new ArrayList<>(1);
             buckets[getBucketIndex(key)] = currentBucket;
         }
+
+        V oldValue = null;
         Entry<K, V> currentEntry = getEntry(key);
         if (currentEntry == null) {
             currentBucket.add(new Entry<>(key, value));
@@ -46,9 +42,8 @@ public class HashMap<K, V> implements Map<K, V> {
 
     @Override
     public V get(K key) {
-        List<Entry<K, V>> currentBucket = getBucket(key);
-
-        return currentBucket == null ? null : Objects.requireNonNull(getEntry(key)).getValue();
+        Entry<K, V> entry = getEntry(key);
+        return entry == null ? null : entry.getValue();
     }
 
     @Override
@@ -63,7 +58,8 @@ public class HashMap<K, V> implements Map<K, V> {
             Entry<K, V> removedEntry = getEntry(key);
             if (removedEntry != null) {
                 size--;
-                return bucket.remove(bucket.indexOf(removedEntry)).getValue();
+                bucket.remove(removedEntry);
+                return removedEntry.getValue();
             }
         }
 
@@ -77,10 +73,6 @@ public class HashMap<K, V> implements Map<K, V> {
 
     @Override
     public boolean containsKey(K key) {
-        List<Entry<K, V>> currentBucket = getBucket(key);
-        if (currentBucket == null) {
-            return false;
-        }
         return getEntry(key) != null;
     }
 
@@ -89,15 +81,25 @@ public class HashMap<K, V> implements Map<K, V> {
     }
 
     private int getBucketIndex(K key) {
+        return getBucketIndex(key, buckets);
+    }
+
+    private int getBucketIndex(K key, List<Entry<K, V>>[] buckets) {
         if (key == null) {
             return 0;
         }
-
-        return Math.abs(key.hashCode()) % buckets.length;
+        int hash = key.hashCode();
+        if (hash == Integer.MIN_VALUE) {
+            hash = Integer.MAX_VALUE;
+        }
+        return Math.abs(hash) % buckets.length;
     }
 
     private Entry<K, V> getEntry(K key) {
         List<Entry<K, V>> bucket = buckets[getBucketIndex(key)];
+        if (bucket == null) {
+            return null;
+        }
         for (Entry<K, V> entry : bucket) {
             if (Objects.equals(key, entry.getKey())) {
                 return entry;
@@ -108,11 +110,13 @@ public class HashMap<K, V> implements Map<K, V> {
 
     private void mapSpreading() {
         if (size > buckets.length * LOAD_FACTOR) {
-            List<Entry<K, V>>[] newBuckets = new ArrayList[buckets.length * INCREASE_FACTOR];
-            for (Entry<K, V> entry : HashMap.this) {
+            @SuppressWarnings("unchecked")
+            List<Entry<K, V>>[] newBuckets = new ArrayList[buckets.length * INCREASE_FACTOR + 1];
+
+            for (Map.Entry<K, V> entry : this) {
                 K key = entry.getKey();
                 V value = entry.getValue();
-                int bucketIndex = key == null ? 0 : Math.abs(key.hashCode()) % newBuckets.length;
+                int bucketIndex = getBucketIndex(key, newBuckets);
                 List<Entry<K, V>> currentBucket = newBuckets[bucketIndex];
                 if (currentBucket == null) {
                     currentBucket = new ArrayList<>();
@@ -125,20 +129,24 @@ public class HashMap<K, V> implements Map<K, V> {
     }
 
     @Override
-    public Iterator<Entry<K, V>> iterator() {
+    public Iterator<Map.Entry<K, V>> iterator() {
         return new HashMapIterator();
     }
 
-    private class HashMapIterator implements Iterator<Entry<K, V>> {
+    private class HashMapIterator implements Iterator<Map.Entry<K, V>> {
 
-        private int bucketIndex = getNextBucketIndex(0);
+        private int bucketIndex = -1;
         private Iterator<Entry<K, V>> bucketIterator;
-        private Entry<K, V> entry;
+        private Entry<K, V> currentEntry;
         private boolean isRemovable;
+
+        public HashMapIterator() {
+            moveToNextBucketIndex();
+        }
 
         @Override
         public boolean hasNext() {
-            return bucketIndex != -1;
+            return bucketIndex != -1 && size > 0;
         }
 
         @Override
@@ -152,84 +160,70 @@ public class HashMap<K, V> implements Map<K, V> {
             }
 
             if (bucketIterator.hasNext()) {
-                entry = bucketIterator.next();
+                currentEntry = bucketIterator.next();
                 isRemovable = true;
                 if (!bucketIterator.hasNext()) {
                     bucketIterator = null;
-                    bucketIndex = getNextBucketIndex(++bucketIndex);
+                    moveToNextBucketIndex();
                 }
-                return entry;
+                return currentEntry;
             }
             return null;
         }
 
-        private int getNextBucketIndex(int bucketIndex) {
-            for (int i = bucketIndex; i < buckets.length; i++) {
+        private void moveToNextBucketIndex() {
+            for (int i = bucketIndex + 1; i < buckets.length; i++) {
                 if (buckets[i] != null) {
-                    return i;
+                    bucketIndex = i;
+                    return;
                 }
             }
-            return -1;
+
+            bucketIndex = -1;
         }
 
         @Override
         public void remove() {
-            if (isRemovable) {
-                HashMap.this.remove(entry.getKey());
-                isRemovable = false;
-            } else {
+            if (!isRemovable) {
                 throw new IllegalStateException();
             }
+
+            HashMap.this.remove(currentEntry.getKey());
+            isRemovable = false;
         }
     }
 
-    /*private class HashMapIterator implements Iterator<Entry<K, V>> {
-        private int count;
-        private int currentBucketIndex = getBucketIndex(0);
-        private int currentEntryIndex = 0;
-        private List<Entry<K, V>> currentBucket;
-        private Entry<K, V> currentEntry;
-        private boolean isRemovable;
+    static class Entry<K, V> implements Map.Entry<K, V> {
 
-        @Override
-        public boolean hasNext() {
-            return count < size;
+        private final K key;
+        private V value;
+
+        public Entry(K key, V value) {
+            this.key = key;
+            this.value = value;
         }
 
         @Override
-        public Entry<K, V> next() {
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
-            currentBucket = buckets[currentBucketIndex];
-            currentEntry = currentBucket.get(currentEntryIndex);
-            if (currentEntryIndex < currentBucket.size() - 1) {
-                currentEntryIndex++;
-            } else {
-                currentBucketIndex = getBucketIndex(++currentBucketIndex);
-                currentEntryIndex = 0;
-            }
-            count++;
-            isRemovable = true;
-            return currentEntry;
+        public K getKey() {
+            return key;
         }
 
         @Override
-        public void remove() {
-            if (isRemovable) {
-                HashMap.this.remove(currentEntry.key);
-                isRemovable = false;
-            }
+        public V getValue() {
+            return value;
         }
 
-        //
-        private int getBucketIndex(int index) {
-            for (int i = index; i < buckets.length; i++) {
-                if (buckets[i] != null) {
-                    return i;
-                }
-            }
-            return -1;
+        @Override
+        public void setValue(V value) {
+            this.value = value;
         }
-    }*/
+
+        @Override
+        public String toString() {
+            return "Entry{" +
+                    "key=" + key +
+                    ", value=" + value +
+                    '}';
+        }
+    }
 }

@@ -15,8 +15,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class HasMapTest {
 
-    private HashMap<String, String> hashMap;
-    private HashMap<String, String> emptyHashMap = new HashMap<>();
+    private Map<String, String> hashMap;
+    private Map<String, String> emptyHashMap = new HashMap<>();
 
     @Before
     public void before() {
@@ -81,7 +81,8 @@ public class HasMapTest {
 
     @Test
     public void testRemove() {
-        assertEquals("one", hashMap.remove("M"));
+        String act = hashMap.remove("M");
+        assertEquals("one", act);
         assertEquals(4, hashMap.size());
         assertEquals("two", hashMap.remove("B"));
         assertEquals("three", hashMap.remove("N"));
@@ -96,39 +97,16 @@ public class HasMapTest {
 
     @Test
     public void testIterator() {
-        for (Entry<String, String> entry : hashMap) {
+        for (Map.Entry<String, String> entry : hashMap) {
             emptyHashMap.put(entry.getKey(), entry.getValue());
         }
 
         assertEquals(5, emptyHashMap.size());
-
-        Iterator<Entry<String, String>> it = hashMap.iterator();
+        Iterator<Map.Entry<String, String>> it = hashMap.iterator();
         it.hasNext();
         String key = it.next().getValue();
         it.remove();
         assertFalse(hashMap.containsKey(key));
         assertThat(hashMap.size(), is(4));
-    }
-
-    @Test
-    public void testKeyHashCode () throws Exception{
-        Class clazz = hashMap.getClass();
-
-        Field field = clazz.getDeclaredField("buckets");
-        field.setAccessible(true);
-
-        Method methodGetBucketIndex = clazz.getDeclaredMethod("getBucketIndex", Object.class);
-        methodGetBucketIndex.setAccessible(true);
-
-        List[] buckets = (List[]) field.get(hashMap);
-        for (int i = 0; i < buckets.length; i++) {
-            if (buckets[i] != null) {
-                for (Object e : buckets[i]) {
-                    Field keyField = e.getClass().getDeclaredField("key");
-                    keyField.setAccessible(true);
-                    assertEquals(i, methodGetBucketIndex.invoke(hashMap, methodGetBucketIndex.invoke(hashMap, keyField.get(e))));
-                }
-            }
-        }
     }
 }

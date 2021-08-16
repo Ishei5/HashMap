@@ -1,6 +1,6 @@
 package com.roadtosenior.datastructures.map;
 
-public interface Map<K, V> extends Iterable<Entry<K, V>> {
+public interface Map<K, V> extends Iterable<Map.Entry<K, V>> {
 
     V put(K key, V value);
 
@@ -13,4 +13,12 @@ public interface Map<K, V> extends Iterable<Entry<K, V>> {
     boolean isEmpty();
 
     boolean containsKey(K key);
+
+    interface Entry<K, V> {
+        K getKey();
+
+        V getValue();
+
+        void setValue(V value);
+    }
 }
